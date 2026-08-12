@@ -263,6 +263,14 @@ private_key_file = "/etc/platform-api/keys/jwt_private.pem"
 # syntax). Not used for "internal_token" tokens — their expiry is whatever
 # "exp" claim the issuer set.
 token_ttl = "1h"
+# skip_validation disables JWT signature and issuer verification in
+# "internal_token" mode: the token is parsed for its claims but its signature is
+# not checked, so unsigned ("none") tokens are accepted and public_key_file is
+# not required. DANGEROUS — enable ONLY when a trusted mediation layer on a
+# private network has already authenticated the caller and forwards an unsigned
+# internal token carrying the org context. Never enable on an internet-facing
+# listener. Defaults to false; ignored in "file"/"idp".
+# skip_validation = false
 
 # ---------------------------------------------------------------------------
 # Server listeners (HTTP + HTTPS)

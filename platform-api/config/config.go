@@ -328,6 +328,15 @@ type JWT struct {
 	PrivateKeyFile string        `koanf:"private_key_file"`
 	Issuer         string        `koanf:"issuer"`
 	TokenTTL       time.Duration `koanf:"token_ttl"`
+	// SkipValidation disables JWT signature and issuer verification in
+	// "internal_token" mode: the token is parsed for its claims but its
+	// signature is not checked, so unsigned ("none") tokens are accepted and no
+	// public key is loaded. This exists ONLY for deployments where a trusted
+	// mediation layer on a private network has already authenticated the caller
+	// and forwards an unsigned internal token carrying the org context. It is
+	// DANGEROUS on any internet-facing listener — anyone can then forge claims.
+	// Defaults to false; ignored in "file" and "idp" modes.
+	SkipValidation bool `koanf:"skip_validation"`
 }
 
 // LoadPublicKey reads and parses the PEM-encoded RSA public key from
