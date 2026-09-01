@@ -7,28 +7,38 @@
  * You may not alter or remove any copyright or other notice from copies of this content.
  */
 
+/**
+ * View models the pipelines UI renders. They are derived from, and serialized
+ * back to, the platform-api REST shapes (promotion paths + default gateways;
+ * see `dataPort.ts`) — the UI keeps a linear stage model because that is the
+ * only topology the builder creates, while the wire format is the API's graph.
+ */
+
+/** A managed gateway available in an environment. `name` is its resolved host. */
 export type Gateway = {
   id: string;
   name: string;
 };
 
-/** A deployment environment. `gateways` is the set a pipeline stage on this environment may target. */
+/**
+ * A deployment environment plus the managed gateways bound to it (sourced from
+ * `/managed-gateways`, grouped by environment). `critical` mirrors the API's
+ * `isProduction` and drives the "Critical" badge on a stage.
+ */
 export type Environment = {
   id: string;
   name: string;
   gateways: Gateway[];
-  /** Marks an environment as production-grade for the "Critical" badge on its pipeline stages. */
   critical?: boolean;
 };
 
 /**
- * One step of a pipeline: an environment, deploying through every gateway it
- * has — not a single chosen one. `defaultGatewayId` is marked (via toggle) at
- * the moment the environment is added to the pipeline and is shown as the
- * "Default" chip among that environment's gateways on the stage card.
+ * One step of a pipeline: an environment and, when that environment has more
+ * than one gateway, the gateway marked as its default. A pipeline uses a given
+ * environment at most once; stages are id-keyed (not environmentId-keyed) so
+ * that constraint isn't baked into every consumer.
  */
 export type PipelineStage = {
-  /** Stable per-stage id, distinct from `environmentId` — a pipeline can only use a given environment once today, but stages are still id-keyed rather than environmentId-keyed so that isn't baked into every consumer. */
   id: string;
   environmentId: string;
   defaultGatewayId: string;
@@ -37,13 +47,11 @@ export type PipelineStage = {
 export type Pipeline = {
   id: string;
   name: string;
-  isDefault: boolean;
   stages: PipelineStage[];
 };
 
 export type CreatePipelineInput = {
   name: string;
-  isDefault: boolean;
   stages: PipelineStage[];
 };
 

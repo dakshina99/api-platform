@@ -49,7 +49,6 @@ const PipelineCreatePage: FC<PipelineCreatePageProps> = ({
 }) => {
   const isEdit = mode === 'edit' && !!initialPipeline;
   const [name, setName] = useState(initialPipeline?.name ?? '');
-  const isDefault = initialPipeline?.isDefault ?? false;
   const [stages, setStages] = useState<PipelineStage[]>(initialPipeline?.stages ?? []);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerAnchor, setPickerAnchor] = useState<HTMLElement | null>(null);
@@ -77,7 +76,9 @@ const PipelineCreatePage: FC<PipelineCreatePageProps> = ({
     setStages((prev) => prev.filter((stage) => stage.id !== stageId));
   };
 
-  const canSubmit = name.trim().length > 0 && stages.length > 0;
+  // A pipeline needs at least two environments to form a promotion path
+  // (source -> target), which is what the platform-api requires.
+  const canSubmit = name.trim().length > 0 && stages.length >= 2;
 
   return (
     <PageContent fullWidth>
@@ -101,7 +102,9 @@ const PipelineCreatePage: FC<PipelineCreatePageProps> = ({
             placeholder="Enter pipeline name"
             value={name}
             onChange={(event) => setName(event.target.value)}
-            autoFocus
+            disabled={isEdit}
+            helperText={isEdit ? 'A pipeline cannot be renamed after it is created.' : undefined}
+            autoFocus={!isEdit}
           />
         </Box>
 
@@ -190,14 +193,14 @@ const PipelineCreatePage: FC<PipelineCreatePageProps> = ({
             title={!canSubmit
               ? name.trim().length === 0
                 ? 'Enter a pipeline name to continue.'
-                : 'Add at least one environment to the pipeline.'
+                : 'Add at least two environments to the pipeline.'
               : ''}
           >
             <span>
               <Button
                 variant="contained"
                 disabled={!canSubmit}
-                onClick={() => onSubmit({ name: name.trim(), isDefault, stages }, initialPipeline?.id)}
+                onClick={() => onSubmit({ name: name.trim(), stages }, initialPipeline?.id)}
               >
                 {isEdit ? 'Save Changes' : 'Create'}
               </Button>

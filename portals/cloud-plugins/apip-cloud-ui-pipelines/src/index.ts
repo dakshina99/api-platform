@@ -9,7 +9,14 @@
 
 export { default as PipelinesFeature } from './PipelinesFeature';
 export type { PipelinesFeatureProps } from './PipelinesFeature';
-export { default as ProjectPipelinesPage } from './ProjectPipelinesPage';
-export type { ProjectPipelinesPageProps } from './ProjectPipelinesPage';
-export type { AIWorkspaceHostPort, NotifySeverity } from './hostPort';
-export type { CreatePipelineInput, Environment, Gateway, Pipeline, PipelineStage, UpdatePipelineInput } from './types';
+export { createRestPipelinePort } from './dataPort';
+export type { PipelinePort } from './dataPort';
+export type { AIWorkspaceHostPort, ApiFetch, NotifySeverity } from './hostPort';
+export type {
+  CreatePipelineInput,
+  Environment,
+  Gateway,
+  Pipeline,
+  PipelineStage,
+  UpdatePipelineInput,
+} from './types';

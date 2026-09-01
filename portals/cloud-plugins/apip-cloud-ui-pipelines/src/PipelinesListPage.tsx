@@ -11,7 +11,6 @@ import { useState, type FC } from 'react';
 import {
   Box,
   Button,
-  Chip,
   Collapse,
   Dialog,
   DialogActions,
@@ -148,12 +147,9 @@ const PipelinesListPage: FC<PipelinesListPageProps> = ({
                   }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="subtitle1" >
+                    <Typography variant="subtitle1">
                       {pipeline.name}
                     </Typography>
-                    {pipeline.isDefault ? (
-                      <Chip label="Default" size="small" color="primary" variant="outlined" />
-                    ) : null}
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <Tooltip title="Edit pipeline">
