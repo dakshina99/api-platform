@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -393,17 +394,41 @@ func (c *Client) newActionConfig(namespace string) (*action.Configuration, error
 }
 
 const (
-	helmReleaseNameSuffix   = "-gw"
-	maxHelmReleaseNameLen   = 53
+	helmReleaseNameSuffix = "-gw"
+	// maxDNS1123Label is the Kubernetes limit on a Service name.
+	maxDNS1123Label = 63
+	// helmChartName is the gateway chart's own name. Its fullname helper appends
+	// this to the release name unless the release name already contains it.
+	helmChartName = "gateway"
+	// runtimeServiceSuffix is the longest suffix the chart adds to that fullname
+	// to name a Service.
+	runtimeServiceSuffix    = "-gateway-runtime"
 	helmReleaseHashPrefix   = "gw-"
 	helmReleaseHashHexChars = 8
 )
 
-// GetReleaseName generates a stable Helm release name from a gateway name.
-// Helm release names must be DNS-1123 labels and at most 53 characters.
+// maxReleaseNameLen is how long a release name may be before the Services the
+// chart derives from it overflow a DNS-1123 label.
+//
+// The chart names a Service "<fullname><suffix>", and fullname is the release
+// name plus "-gateway" — except when the release name already contains
+// "gateway", where the chart uses the release name unchanged. So the budget
+// depends on the name itself: 47 when it carries the chart name already, 39
+// when the chart has to add it. Assuming the larger budget for every name is
+// what produced 71-character Service names for a hashed release.
+func maxReleaseNameLen(releaseName string) int {
+	budget := maxDNS1123Label - len(runtimeServiceSuffix)
+	if !strings.Contains(releaseName, helmChartName) {
+		budget -= len("-") + len(helmChartName)
+	}
+	return budget
+}
+
+// GetReleaseName generates a stable Helm release name from a gateway name,
+// short enough that the names the chart derives from it stay within 63.
 func GetReleaseName(gatewayName string) string {
 	candidate := gatewayName + helmReleaseNameSuffix
-	if len(candidate) <= maxHelmReleaseNameLen {
+	if len(candidate) <= maxReleaseNameLen(candidate) {
 		return candidate
 	}
 	sum := sha256.Sum256([]byte(gatewayName))
