@@ -393,14 +393,24 @@ func (c *Client) newActionConfig(namespace string) (*action.Configuration, error
 }
 
 const (
-	helmReleaseNameSuffix   = "-gw"
-	maxHelmReleaseNameLen   = 53
+	helmReleaseNameSuffix = "-gw"
+	// maxHelmReleaseNameLen is 47, not Helm's own 53: the chart names its Services
+	// by appending to the release name, and the longest of those suffixes is
+	// "-gateway-runtime" (16 characters). A Service name is a DNS-1123 label and so
+	// capped at 63, which leaves 63-16 = 47 for the release itself. At 53 a release
+	// name in the 48..53 range was kept verbatim and then produced a Service name of
+	// 64..69, which the API server rejects — the gateway's pods run but its Service
+	// is never created, so the APIGateway never reaches Programmed.
+	maxHelmReleaseNameLen   = 47
 	helmReleaseHashPrefix   = "gw-"
 	helmReleaseHashHexChars = 8
 )
 
 // GetReleaseName generates a stable Helm release name from a gateway name.
-// Helm release names must be DNS-1123 labels and at most 53 characters.
+// Helm release names must be DNS-1123 labels and at most 53 characters; this
+// returns at most maxHelmReleaseNameLen so the names the chart derives from it
+// also fit. Lowering the bound from 53 only affects names that were already
+// producing an over-long Service, so no working gateway changes release name.
 func GetReleaseName(gatewayName string) string {
 	candidate := gatewayName + helmReleaseNameSuffix
 	if len(candidate) <= maxHelmReleaseNameLen {
