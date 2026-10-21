@@ -306,6 +306,28 @@ func TestCreateBuild_NoDescriptionReportsNone(t *testing.T) {
 	}
 }
 
+// The description is bounded in characters, as the schema's maxLength is, so a note
+// in a multi-byte script is not refused early and an over-long one is a validation
+// failure instead of whatever the database makes of an oversized column.
+func TestCreateBuild_DescriptionLengthIsBoundedInCharacters(t *testing.T) {
+	depRepo := &buildTestDeploymentRepo{}
+	service := newBuildTestService(&buildTestAPIRepo{apiModel: buildTestAPI()}, depRepo)
+
+	atLimit := strings.Repeat("é", 1023)
+	if _, err := service.CreateBuild(buildTestAPIUUID, buildTestOrgUUID, "tester", atLimit, nil); err != nil {
+		t.Fatalf("CreateBuild with a 1023-character description: %v", err)
+	}
+
+	depRepo.createdBuild = nil
+	_, err := service.CreateBuild(buildTestAPIUUID, buildTestOrgUUID, "tester", atLimit+"é", nil)
+	if !apperror.ValidationFailed.Is(err) {
+		t.Fatalf("error = %v, want ValidationFailed", err)
+	}
+	if depRepo.createdBuild != nil {
+		t.Error("an over-long description must not store a build")
+	}
+}
+
 // Being at the limit with every build in use is a conflict the caller can act on,
 // not a server fault: they are told the limit they are up against so they know how
 // many deployments stand between them and another build.

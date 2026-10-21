@@ -127,6 +127,9 @@ func (h BuildRoutes) create(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return serviceError(err, fmt.Sprintf("failed to prepare a build for %s %s", h.Subject, handle))
 	}
+	if err := h.Identity.ResolveIdentityField(&build.CreatedBy); err != nil {
+		return serviceError(err, fmt.Sprintf("failed to resolve who prepared %s %s build %s", h.Subject, handle, build.BuildId))
+	}
 
 	setLocation(w, h.Segment, handle, "builds", build.BuildId)
 	httputil.WriteJSON(w, http.StatusCreated, build)
@@ -143,6 +146,13 @@ func (h BuildRoutes) list(w http.ResponseWriter, r *http.Request) error {
 	builds, err := h.Service.GetBuildsByHandle(handle, orgID, limit)
 	if err != nil {
 		return serviceError(err, fmt.Sprintf("failed to get builds for %s %s", h.Subject, handle))
+	}
+	createdByFields := make([]**string, len(builds.List))
+	for i := range builds.List {
+		createdByFields[i] = &builds.List[i].CreatedBy
+	}
+	if err := h.Identity.ResolveIdentityFields(createdByFields); err != nil {
+		return serviceError(err, fmt.Sprintf("failed to resolve who prepared the builds of %s %s", h.Subject, handle))
 	}
 	httputil.WriteJSON(w, http.StatusOK, builds)
 	return nil
@@ -161,6 +171,9 @@ func (h BuildRoutes) get(w http.ResponseWriter, r *http.Request) error {
 	build, err := h.Service.GetBuildByHandle(handle, buildID, orgID)
 	if err != nil {
 		return serviceError(err, fmt.Sprintf("failed to get %s %s build %s", h.Subject, handle, buildID))
+	}
+	if err := h.Identity.ResolveIdentityField(&build.CreatedBy); err != nil {
+		return serviceError(err, fmt.Sprintf("failed to resolve who prepared %s %s build %s", h.Subject, handle, buildID))
 	}
 	httputil.WriteJSON(w, http.StatusOK, build)
 	return nil

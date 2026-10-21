@@ -125,6 +125,10 @@ func TestGraphQLDeployAPI_Current_Success(t *testing.T) {
 	if !deploymentRepo.setCurrentCalled {
 		t.Error("expected deployment status to be set")
 	}
+	created := deploymentRepo.createdDeployment
+	if resp.BuildId == nil || created == nil || created.BuildID == nil || *resp.BuildId != *created.BuildID {
+		t.Errorf("expected the response to name the build the deployment runs, got %v", resp.BuildId)
+	}
 }
 
 // TestGraphQLDeployAPI_LTSGateway_Refused verifies that a deploy to an LTS
@@ -474,6 +478,7 @@ func TestGenerateGraphQLAPIDeploymentYAML_CarriesSandboxUpstream(t *testing.T) {
 // TestGraphQLUndeployDeployment_Success verifies an active deployment
 // transitions to UNDEPLOYING when the bound gateway matches the request.
 func TestGraphQLUndeployDeployment_Success(t *testing.T) {
+	buildID := "2026-10-21-1"
 	stored := &model.GraphQLAPI{ID: "gql-uuid-1", Handle: "countries-graphql-api", OrganizationID: "org-1"}
 	repo := &mockGraphQLAPIRepo{
 		getByHandleFunc: func(handle, orgUUID string) (*model.GraphQLAPI, error) { return stored, nil },
@@ -487,6 +492,7 @@ func TestGraphQLUndeployDeployment_Success(t *testing.T) {
 			Name:         "prod-deployment",
 			ArtifactID:   stored.ID,
 			GatewayID:    gateway.ID,
+			BuildID:      &buildID,
 			Status:       &deployed,
 		},
 		setCurrentUpdatedAt: time.Now(),
@@ -503,6 +509,9 @@ func TestGraphQLUndeployDeployment_Success(t *testing.T) {
 	}
 	if deploymentRepo.setCurrentStatus != model.DeploymentStatusUndeploying {
 		t.Errorf("expected repo to be asked to set status UNDEPLOYING, got %s", deploymentRepo.setCurrentStatus)
+	}
+	if resp.BuildId == nil || *resp.BuildId != buildID {
+		t.Errorf("expected buildId %q, got %v", buildID, resp.BuildId)
 	}
 }
 
@@ -544,6 +553,7 @@ func TestGraphQLUndeployDeployment_GatewayMismatch_Rejected(t *testing.T) {
 // TestGraphQLRestoreDeployment_Success verifies restoring an UNDEPLOYED
 // deployment transitions it back to DEPLOYING.
 func TestGraphQLRestoreDeployment_Success(t *testing.T) {
+	buildID := "2026-10-21-1"
 	stored := &model.GraphQLAPI{ID: "gql-uuid-1", Handle: "countries-graphql-api", OrganizationID: "org-1"}
 	repo := &mockGraphQLAPIRepo{
 		getByHandleFunc: func(handle, orgUUID string) (*model.GraphQLAPI, error) { return stored, nil },
@@ -556,6 +566,7 @@ func TestGraphQLRestoreDeployment_Success(t *testing.T) {
 			Name:         "prod-deployment",
 			ArtifactID:   stored.ID,
 			GatewayID:    gateway.ID,
+			BuildID:      &buildID,
 			Content:      []byte("apiVersion: v1"),
 		},
 		currentDeploymentID: "dep-0",
@@ -571,6 +582,9 @@ func TestGraphQLRestoreDeployment_Success(t *testing.T) {
 	}
 	if string(resp.Status) != string(model.DeploymentStatusDeploying) {
 		t.Errorf("expected initial status DEPLOYING, got %s", resp.Status)
+	}
+	if resp.BuildId == nil || *resp.BuildId != buildID {
+		t.Errorf("expected buildId %q, got %v", buildID, resp.BuildId)
 	}
 }
 

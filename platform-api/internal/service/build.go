@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"unicode/utf8"
 
 	"gopkg.in/yaml.v3"
 
@@ -32,6 +33,10 @@ import (
 	"github.com/wso2/api-platform/platform-api/internal/repository"
 	"github.com/wso2/api-platform/platform-api/internal/utils"
 )
+
+// buildDescriptionMaxLen mirrors the BuildRequest description maxLength, counted in
+// characters as JSON Schema counts them.
+const buildDescriptionMaxLen = 1023
 
 // BuildService stores and serves builds for EVERY artifact kind.
 //
@@ -143,6 +148,10 @@ func (s *BuildService) Render(artifactUUID, orgUUID, kind, createdBy string,
 func (s *BuildService) Create(artifactUUID, orgUUID, kind, createdBy, description string,
 	metadata map[string]interface{}) (*api.BuildResponse, error) {
 
+	if utf8.RuneCountInString(description) > buildDescriptionMaxLen {
+		return nil, apperror.ValidationFailed.New(
+			fmt.Sprintf("The description must be at most %d characters.", buildDescriptionMaxLen))
+	}
 	build, _, err := s.Render(artifactUUID, orgUUID, kind, createdBy, metadata)
 	if err != nil {
 		return nil, err

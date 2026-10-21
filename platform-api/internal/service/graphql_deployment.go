@@ -371,7 +371,7 @@ func (s *GraphQLAPIDeploymentService) DeployGraphQLAPI(apiID string, req *api.De
 		BackfillAPIKeysToGateway(s.apiKeyRepo, s.gatewayRepo, s.gatewayEventsService, s.slogger, apiModel.ID, gatewayID, createdBy)
 	}
 
-	return toAPIDeploymentResponse(
+	resp, err := toAPIDeploymentResponse(
 		s.gatewayRepo,
 		deployment.DeploymentID,
 		deployment.Name,
@@ -383,6 +383,7 @@ func (s *GraphQLAPIDeploymentService) DeployGraphQLAPI(apiID string, req *api.De
 		deployment.UpdatedAt,
 		nil,
 	)
+	return namingBuild(resp, err, deployment.BuildID)
 }
 
 // RestoreGraphQLAPIDeployment restores a previous deployment (ARCHIVED or
@@ -459,7 +460,7 @@ func (s *GraphQLAPIDeploymentService) RestoreGraphQLAPIDeployment(apiID, deploym
 		BackfillAPIKeysToGateway(s.apiKeyRepo, s.gatewayRepo, s.gatewayEventsService, s.slogger, apiModel.ID, targetDeployment.GatewayID, "")
 	}
 
-	return toAPIDeploymentResponse(
+	resp, err := toAPIDeploymentResponse(
 		s.gatewayRepo,
 		targetDeployment.DeploymentID,
 		targetDeployment.Name,
@@ -471,6 +472,7 @@ func (s *GraphQLAPIDeploymentService) RestoreGraphQLAPIDeployment(apiID, deploym
 		&updatedAt,
 		nil,
 	)
+	return namingBuild(resp, err, targetDeployment.BuildID)
 }
 
 // UndeployGraphQLAPIDeployment undeploys an active deployment. Mirrors
@@ -538,7 +540,7 @@ func (s *GraphQLAPIDeploymentService) UndeployGraphQLAPIDeployment(apiID, deploy
 		}
 	}
 
-	return toAPIDeploymentResponse(
+	resp, err := toAPIDeploymentResponse(
 		s.gatewayRepo,
 		deployment.DeploymentID,
 		deployment.Name,
@@ -550,6 +552,7 @@ func (s *GraphQLAPIDeploymentService) UndeployGraphQLAPIDeployment(apiID, deploy
 		&newUpdatedAt,
 		nil,
 	)
+	return namingBuild(resp, err, deployment.BuildID)
 }
 
 // DeleteGraphQLAPIDeployment permanently deletes an undeployed deployment
@@ -639,6 +642,7 @@ func (s *GraphQLAPIDeploymentService) GetGraphQLAPIDeployments(apiID, orgUUID st
 		if err != nil {
 			return nil, err
 		}
+		mapped.BuildId = d.BuildID
 		items = append(items, *mapped)
 	}
 
@@ -667,7 +671,7 @@ func (s *GraphQLAPIDeploymentService) GetGraphQLAPIDeployment(apiID, deploymentI
 		return nil, apperror.DeploymentNotFound.New()
 	}
 
-	return toAPIDeploymentResponse(
+	resp, err := toAPIDeploymentResponse(
 		s.gatewayRepo,
 		deployment.DeploymentID,
 		deployment.Name,
@@ -679,4 +683,5 @@ func (s *GraphQLAPIDeploymentService) GetGraphQLAPIDeployment(apiID, deploymentI
 		deployment.UpdatedAt,
 		deployment.StatusReason,
 	)
+	return namingBuild(resp, err, deployment.BuildID)
 }
